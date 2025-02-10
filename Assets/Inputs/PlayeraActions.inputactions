@@ -1,0 +1,74 @@
+{
+    "name": "PlayeraActions",
+    "maps": [
+        {
+            "name": "PlayersBaseActions",
+            "id": "52c743b1-0fa4-4dde-b312-e845879f53e9",
+            "actions": [
+                {
+                    "name": "MoveTo",
+                    "type": "Button",
+                    "id": "31617bbd-368c-4c4b-bf79-a7547617ecdf",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Spell_1",
+                    "type": "Button",
+                    "id": "8014e8ec-3ddb-47df-8444-f1a6f42c9692",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "New action",
+                    "type": "Button",
+                    "id": "ce6069b3-f496-4e5d-a248-b8e1e5f211d6",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "7ec7f1ce-2299-47dd-a728-d978d431e3cf",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MoveTo",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5ea19f8b-d596-4104-91cf-a2b696c49bdb",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Spell_1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "00c25a65-2bf9-4441-9e1f-9ae9d17d12ee",
+                    "path": "",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "New action",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

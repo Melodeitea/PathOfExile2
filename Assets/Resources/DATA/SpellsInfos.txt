@@ -1,0 +1,8 @@
+ID	Nom	Type	Sous-Type	NiveauMax	Degats	Mana cost	Temps de cast	Icon	number	SpellCastType	Special type 1	Special Type 2	Description	Infos
+bdf_1	boule de feu	Spell	projectile	10	50	15	0,5	Iconspell	5	classic	1	1	none	none
+ce_2	chaine eclair	Spell	aoe	5	100	20	0,75	Iconspell2	1	charge	1,5	4	none	none
+jd_3	jet d'acide	Spell	rebond	6	30	3	0,1	Iconspell3	1	continu	0,15	1,2	none	none
+tdf_4	trait de feu	Spell	projectile	4	25	5	0,2	Iconspell4	1	classic	0,15	1,2	none	none
+f_5	foudre	Spell	aoe	3	150	22	0,35	Iconspell5	1	charge	0,15	1,2	none	none
+c_6	choc	Spell	projectile	8	35	2	0,23	Iconspell6	1	classic	0,15	1,2	none	none
+nd_7	nuage d'acide	Spell	aoe	6	20	15	0,3	Iconspell7	1	continu	0,15	1,2	none	none

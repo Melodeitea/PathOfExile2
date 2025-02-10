@@ -1,0 +1,44 @@
+int PlayerCrystal = 0;
+
+public void OnInteract(InputAction.CallbackContext ctx)
+{
+	if (ctx.performed)
+	{
+
+		TryInteract();
+	}
+}
+
+
+
+private void TryInteract()
+ {
+     Collider[] cols = Physics.OverlapSphere(this.transform.position, 2);
+		float dist = 1000;
+		Lever lever = null;
+		foreach(Collider col in cols)
+		{
+if(col.GetComponent<Lever>() != null)
+{
+	if(col.GetComponent<Lever>().isUsable)
+	{
+                 Vector3 playertoobj = col.gameObject.transform.position - this.transform.position;
+                 float currentdist = Vector3.Magnitude(playertoobj);
+                 if (currentdist < dist)
+                 {
+                     dist = currentdist;
+                     lever = col.GetComponent<Lever>();
+                 }
+             }					
+         }
+		}
+		if(lever!=null)
+		{
+         lever.GetComponent<Lever>().Use();
+     }
+ }
+public void TakeCrystal( int val)
+{
+	Debug.Log("More crystal");
+	PlayerCrystal += val;
+}
