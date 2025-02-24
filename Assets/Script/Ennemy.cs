@@ -16,11 +16,20 @@ public class Ennemy : MonoBehaviour
     public Material FeedBackMat;
     private Material BaseMat;
 
+
+    [Header("Death Feedback")]
+    public AudioClip deathSound; // Death SFX
+    public ParticleSystem deathEffect; // Death VFX
+    private AudioSource audioSource;
+
+
     void Start()
     {
         ID = (int)System.DateTime.Now.Ticks;
         BaseMat = this.GetComponent<MeshRenderer>().material;
         Life += AddToLife;
+
+        audioSource = GetComponent<AudioSource>(); // Ensures an AudioSource is attached
     }
 
     // Update is called once per frame
@@ -59,6 +68,20 @@ public class Ennemy : MonoBehaviour
     }
     private void EndEnnemy() // put life to zero, stop the ennemy and move it to an inaccessible zone
     {
+        Debug.Log($"{gameObject.name} has died!");
+
+        // Play death effect
+        if (deathEffect != null)
+        {
+            Instantiate(deathEffect, transform.position, Quaternion.identity);
+        }
+
+        // Play death sound
+        if (audioSource != null && deathSound != null)
+        {
+            audioSource.PlayOneShot(deathSound);
+        }
+
         Life = 0;
         bAlive = false;
         this.transform.position = new Vector3(1000, 1000, 1000);

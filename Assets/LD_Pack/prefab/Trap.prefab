@@ -121,3 +121,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9c8d967ab23bc44a9c7b066f33baf45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Damage: 30
+  LaunchTime: 1
+  trapWhirrSound: {fileID: 0}
+  trapBlinkEffect: {fileID: 0}
+  impactSound: {fileID: 0}
+  damageEffect: {fileID: 4271093393614929224, guid: 87ee7299dd44ed747af24dbb91bcd33b, type: 3}
+  dmgFlick: {fileID: 0}
+  damageTextUI: {fileID: 0}
