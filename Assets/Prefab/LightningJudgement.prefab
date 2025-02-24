@@ -599,13 +599,14 @@ MonoBehaviour:
   SpellMoveSpeed: 2
   TickTime: 0.25
   Damage: 10
-  ChargeTime: 1
-  MaxCharge: 15
+  ChargeTime: 0.5
+  MaxCharge: 1
   Manacost: 5
   StreamLightnings:
   - {fileID: 4587388565491682987}
   - {fileID: 1399606314376953942}
   - {fileID: 1895058121573652268}
-  StreamConvergenceSpeed: 0.5
-  StreamDamage: 0
-  ExplosionGO: {fileID: 0}
+  LightningPrefab: {fileID: 919132149155446097, guid: 9d9a7559b89e5754e926aaf8ce9b4a2e, type: 3}
+  ImpactVFX: {fileID: 1141330259687333425, guid: 6718dc24203da53468af9ada8fef7d6d, type: 3}
+  ChargeSound: {fileID: 8300000, guid: c680a49b7b9b1ff4aae080a694dee4c2, type: 3}
+  ImpactSound: {fileID: 8300000, guid: 92cde33c96d28484da34ae1d281c809d, type: 3}

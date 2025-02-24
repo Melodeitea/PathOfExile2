@@ -1,51 +1,59 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Security;
-
 using UnityEngine;
 
 public class LightningJudgement : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     Player Activator;
     public bool bActive = false;
-    // 
     private Vector3 InitPos = new Vector3(1000, 1000, 1000);
     public float SpellMoveSpeed = 1;
     private Vector3 DestinationPos;
-    //
+
     public float TickTime = 1f;
     float LastProckTime = 0;
     public float Damage = 5;
     public float ChargeTime = 1;
     public int MaxCharge = 3;
-    private int MinCharge = 1;
     private float ChargeCumulated = 0;
     private float BeginningTime;
     private float TimerMana = 0;
-    public int Manacost = 5;
+    public int Manacost = 30;
 
     IEnumerator dmgCoroutine = null;
-    //
-    public GameObject[] StreamLightnings = new GameObject[3];
+
+    [Header("Lightning Objects")]
+    public GameObject[] StreamLightnings = new GameObject[3]; // Kept original three objects
     Vector3[] StreamBasePos = new Vector3[3];
-    public float StreamConvergenceSpeed;
-    public float StreamDamage;
-    //
-    float CS = 0;
-    // feedback
-    public GameObject ExplosionGO;
-   
+
+    [Header("Spell Visuals")]
+    public GameObject LightningPrefab; // Lightning effect replacing cylinders
+    public ParticleSystem ImpactVFX; // Lightning impact effect
+
+    [Header("Spell Audio")]
+    public AudioClip ChargeSound;
+    public AudioClip ImpactSound;
+    [Range(0f, 1f)] public float SoundVolume = 0.5f; // NEW: Volume control
+    private AudioSource audioSource;
+
     void Start()
     {
-        for(int i = 0; i < StreamLightnings.Length; i++) // get base pos of streams
+        audioSource = gameObject.AddComponent<AudioSource>();
+
+        // Store the original positions of stream objects
+        for (int i = 0; i < StreamLightnings.Length; i++)
         {
             StreamBasePos[i] = StreamLightnings[i].transform.localPosition;
+
+            // Disable the default cylinder visuals
+            if (StreamLightnings[i].TryGetComponent<MeshRenderer>(out MeshRenderer renderer))
+            {
+                renderer.enabled = false; // Hide the cylinder
+            }
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (bActive)
@@ -53,35 +61,112 @@ public class LightningJudgement : MonoBehaviour
             MoveAll();
             MoveStream();
             ManaManager();
-
         }
     }
-    void ManaManager()
+
+    private void ManaManager()
     {
         TimerMana += Time.deltaTime;
-        if(TimerMana>= CS)
+        if (TimerMana >= ChargeTime)
         {
-            TimerMana -= CS;
+            TimerMana -= ChargeTime;
             Activator.ManaComsuption(Manacost);
         }
     }
-    void DealDamage(float damage)
+
+    public void ActivateSpell(Vector3 destinationpos, Player activator)
     {
-        foreach(var ennemy in ObjectInTriangle(StreamLightnings[0].transform.position, StreamLightnings[1].transform.position, StreamLightnings[2].transform.position))
+        Activator = activator;
+        DestinationPos = destinationpos;
+        transform.position = DestinationPos;
+        bActive = true;
+        BeginningTime = Time.time;
+        TimerMana = 0;
+
+        // Play charge sound
+        if (ChargeSound != null) audioSource.PlayOneShot(ChargeSound, SoundVolume);
+
+        // Replace cylinder visuals with LightningPrefab
+        for (int i = 0; i < StreamLightnings.Length; i++)
         {
-            ennemy.Takehit(damage);
+            Instantiate(LightningPrefab, StreamLightnings[i].transform.position, Quaternion.identity, StreamLightnings[i].transform);
+        }
+
+        // Damage tick system
+        LastProckTime = Time.time;
+        DealDamage(Damage);
+        StartCoroutine(ProcDamage());
+    }
+
+    private IEnumerator ProcDamage()
+    {
+        yield return new WaitForSeconds(TickTime);
+        LastProckTime = Time.time;
+        DealDamage(Damage);
+        dmgCoroutine = ProcDamage();
+        StartCoroutine(dmgCoroutine);
+    }
+
+    private void DealDamage(float damage)
+    {
+        foreach (var enemy in ObjectInTriangle(
+                     StreamLightnings[0].transform.position,
+                     StreamLightnings[1].transform.position,
+                     StreamLightnings[2].transform.position))
+        {
+            enemy.Takehit(damage);
+
+            // Play impact sound with volume control
+            if (ImpactSound != null)
+            {
+                AudioSource enemyAudio = enemy.GetComponent<AudioSource>();
+                if (enemyAudio != null) enemyAudio.PlayOneShot(ImpactSound, SoundVolume);
+            }
+
+            // Ensure the impact VFX plays on the enemy
+            if (ImpactVFX != null)
+            {
+                ParticleSystem impactEffect = Instantiate(ImpactVFX, enemy.transform.position, Quaternion.identity);
+                impactEffect.Play();
+                Destroy(impactEffect.gameObject, impactEffect.main.duration);
+            }
+        }
+    }
+
+    public void DesactiveSpell()
+    {
+        bActive = false;
+        Activator = null;
+        DestinationPos = Vector3.zero;
+        ChargeCumulated = 0;
+        LastProckTime = 0;
+
+        if (dmgCoroutine != null)
+        {
+            StopCoroutine(dmgCoroutine);
+        }
+
+        float RemainingProckDamage = Damage * ((Time.time - LastProckTime) / TickTime);
+        DealDamage(RemainingProckDamage);
+
+        transform.position = InitPos;
+
+        // Reset StreamLightnings to original positions
+        for (int i = 0; i < StreamLightnings.Length; i++)
+        {
+            StreamLightnings[i].transform.localPosition = StreamBasePos[i];
         }
     }
 
     private List<Ennemy> ObjectInTriangle(Vector3 A, Vector3 B, Vector3 C)
     {
-        List<Ennemy> EnnemiesPotential = this.GetComponentInChildren<GetEnnemyInTrigger>().Ennemies;
-        List<Ennemy> FinalEnnemies = new List<Ennemy>(); // crée un tableau de taille equivalente
+        List<Ennemy> EnnemiesPotential = GetComponentInChildren<GetEnnemyInTrigger>().Ennemies;
+        List<Ennemy> FinalEnnemies = new List<Ennemy>();
 
-        foreach(var ennemy in EnnemiesPotential)
+        foreach (var enemy in EnnemiesPotential)
         {
-            Vector3 P = ennemy.transform.position;
-            Vector2 AB = new Vector2(B.x,B.z) - new Vector2(A.x,A.z);
+            Vector3 P = enemy.transform.position;
+            Vector2 AB = new Vector2(B.x, B.z) - new Vector2(A.x, A.z);
             Vector2 AP = new Vector2(P.x, P.z) - new Vector2(A.x, A.z);
 
             Vector2 BC = new Vector2(C.x, C.z) - new Vector2(B.x, B.z);
@@ -94,138 +179,39 @@ public class LightningJudgement : MonoBehaviour
             float BDot = Vector2.Dot(BC, BP);
             float CDot = Vector2.Dot(CA, CP);
 
-            Mathf.Sign(ADot);
-            Mathf.Sign(BDot);
-            Mathf.Sign(CDot);
-
             if (Mathf.Sign(ADot) == Mathf.Sign(BDot) && Mathf.Sign(BDot) == Mathf.Sign(CDot))
             {
-                FinalEnnemies.Add(ennemy); 
+                FinalEnnemies.Add(enemy);
             }
         }
 
         return FinalEnnemies;
     }
-    IEnumerator ProcDamage()
-    {
-       
-       yield return new WaitForSeconds(TickTime);
-       //Debug.Log("Tick : "+Time.time);
-       LastProckTime = Time.time;
-       DealDamage(Damage);
-       dmgCoroutine = ProcDamage();
-       StartCoroutine(dmgCoroutine);
-    }
-    void Explosion()
-    {
-
-        // damages ennemmies;
-        float temps = Time.time - BeginningTime;
-        Debug.Log("Time appearance : " + temps);
-        Debug.Log("CS : " + CS);
-
-        ChargeCumulated = (Time.time - BeginningTime )/ CS;
-       
-        ChargeCumulated = MathF.Floor(ChargeCumulated);
-        if(ChargeCumulated > MaxCharge)
-        {
-            ChargeCumulated = MaxCharge;
-        }
-        float TotalDamage = Damage * ChargeCumulated * ChargeCumulated;
-        float RemainingProckDamage = Damage * ((Time.time - LastProckTime) / TickTime);
-
-        Debug.Log("ChargeCumulated : " + ChargeCumulated);
-        Debug.Log("TotalDamage : " + TotalDamage );
-        Debug.Log("RemainingProckDamage : " + RemainingProckDamage);
-        DealDamage(TotalDamage + RemainingProckDamage);
-        Activator.CurrentSpellEnded();
-
-        GameObject GOEXPLO = Instantiate(ExplosionGO);
-        GOEXPLO.transform.position = this.transform.position+ new Vector3(0,5f,0);
-        GOEXPLO.GetComponent<ParticleSystem>().Play();
-
-
-        DesactiveSpell();
-       
-
-
-
-    }
 
     public void MoveStream()
     {
         int i = 0;
-        foreach(var stream in StreamLightnings)
+        foreach (var stream in StreamLightnings)
         {
-            
-            stream.transform.localPosition -= StreamBasePos[i] * Time.deltaTime * StreamConvergenceSpeed;
+            stream.transform.localPosition -= StreamBasePos[i] * Time.deltaTime * 2;
             i++;
-            if(Vector3.Magnitude(stream.transform.localPosition)<=0.25f)
+            if (Vector3.Magnitude(stream.transform.localPosition) <= 0.25f)
             {
-                Explosion();
+                DesactiveSpell();
             }
         }
     }
 
     public void MoveAll()
     {
-        Vector3 Dir = DestinationPos - this.transform.position;
+        Vector3 Dir = DestinationPos - transform.position;
         Dir = Vector3.Normalize(Dir);
-        this.transform.position += Dir * Time.deltaTime * SpellMoveSpeed;
+        transform.position += Dir * Time.deltaTime * SpellMoveSpeed;
     }
-    public void ChangeDestinationPos(Vector3 DestinationPos)
-    { this.DestinationPos = DestinationPos; }
 
-
-    
-    public void ActivateSpell(Vector3 destinationpos, float castingspeed , Player activator)
+    public void ChangeDestinationPos(Vector3 destinationPos)
     {
-        Activator = activator;
-        this.DestinationPos = destinationpos;
-        this.transform.position = DestinationPos;
-        bActive = true;
-        BeginningTime = Time.time;
-        CS = castingspeed;
-        TimerMana = 0;
-        //calculateStreamspeed Distance à parcourir / (nombre de charge max /castspeed)
-        float distanceToCenter = 2;
-        float RatioChargeAndCastspeed = MaxCharge / CS;
-        StreamConvergenceSpeed = distanceToCenter / MaxCharge ;// distanceToCenter / RatioChargeAndCastspeed;
-
-         
-        foreach (var litghning in StreamLightnings)
-        {
-            litghning.GetComponent<LigthningStream>().ActivateSpell();
-        }
-        //
-        LastProckTime = Time.time;
-        DealDamage(Damage);
-        StartCoroutine(ProcDamage());
+        this.DestinationPos = destinationPos;
     }
-    public void DesactiveSpell()
-    {
-        bActive = false;
-        Activator = null;
-        DestinationPos = Vector3.zero;
-        ChargeCumulated = 0;
-        LastProckTime = 0;
 
-        if(dmgCoroutine != null)
-        {
-            StopCoroutine(dmgCoroutine);
-        }
-        
-        float RemainingProckDamage = Damage * ((Time.time - LastProckTime) / TickTime);
-        DealDamage(RemainingProckDamage);
-
-        this.transform.position = InitPos;
-        for (int i = 0; i < StreamLightnings.Length; i++) // set base pos of streams
-        {
-             StreamLightnings[i].transform.localPosition = StreamBasePos[i];
-        }
-        foreach (var litghning in StreamLightnings)
-        {
-            litghning.GetComponent<LigthningStream>().DesactivateSpell();
-        }
-    }
 }

@@ -16,6 +16,9 @@ public class Player : MonoBehaviour
 	public Slider healthBar; // UI Slider for player HP
 	public TextMeshProUGUI healthText; // UI Text for player HP
 
+	public Slider manaBar; // UI Slider for mana
+	public TextMeshProUGUI manaText; // UI Text for mana
+
 	int PlayerCrystal = 0;
 	int PlayerGold = 0;
 	public TextMeshProUGUI goldText; // Reference to the TextMeshPro UI element for gold
@@ -34,6 +37,7 @@ public class Player : MonoBehaviour
 	public float Mana = 100;
 	[Tooltip("In mana per second (%Manamax/s)")]// en %
 	public float ManaRegen = 2;
+	public float SpellManaCost = 30; // Mana cost for spells
 
 	//Life
 	public float LifeMax = 200;
@@ -136,6 +140,7 @@ public class Player : MonoBehaviour
 		// PlayerSpells = Datas.LoadSpellData(); // ne pas s'en occuper pour l'instant
 
 		UpdateHealthUI();
+		UpdateManaUI();
 
 		// Ensure the goldText field is assigned
 		if (goldText == null)
@@ -160,35 +165,37 @@ public class Player : MonoBehaviour
 	}
 	public void OnSpell_1(InputAction.CallbackContext ctx)
 	{
-		//
-		
-		
 		if (ctx.performed)
 		{
 			Spell1_Hold = true;
-			if ( bCasting == false && Judgement.Manacost <= Mana)
+			if (!bCasting && Mana >= SpellManaCost)
 			{
-				//Debug.Log("" + CastSpell(new SpellData()));
-				Vector3 targetPos = TargetGround();
-				Judgement.ActivateSpell(targetPos, CastingSpeed, this);
-				bCasting = true;
-				LookAtPos = TargetGround();
-				bLookAtSpell = true;
-				LastCastSpell = Time.time;
+				CastSpell();
 			}
 		}
-		else if(ctx.canceled)
+		else if (ctx.canceled)
 		{
 			Spell1_Hold = false;
-			Debug.Log("SpellCancelled");
-			if (bCasting )
+			if (bCasting)
 			{
 				Judgement.DesactiveSpell();
 				bCasting = false;
-
 			}
 		}
 	}
+
+	private void CastSpell()
+    {
+        Mana -= SpellManaCost;
+        UpdateManaUI();
+
+        Vector3 targetPos = TargetGround();
+        Judgement.ActivateSpell(targetPos, this);
+        bCasting = true;
+        LookAtPos = targetPos;
+        bLookAtSpell = true;
+        LastCastSpell = Time.time;
+    }
 
 
 	// Update is called once per frame
@@ -267,12 +274,17 @@ public class Player : MonoBehaviour
 	}
 	private void ManaRegenerated()
 	{
-		Mana += Time.deltaTime * (ManaMax*ManaRegen);
-		if(Mana> ManaMax)
-		{
-			Mana = ManaMax;
-		}
+		Mana += Time.deltaTime * (ManaMax * ManaRegen / 100);
+		if (Mana > ManaMax) Mana = ManaMax;
+		UpdateManaUI();
 	}
+
+	private void UpdateManaUI()
+	{
+		if (manaBar != null) manaBar.value = Mana / ManaMax;
+		if (manaText != null) manaText.text = $"Mana: {Mathf.CeilToInt(Mana)} / {ManaMax}";
+	}
+
 	private void LifeRegenerated()
 	{
 		Life += Time.deltaTime * LifeRegen;
