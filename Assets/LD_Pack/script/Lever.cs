@@ -2,56 +2,64 @@ using UnityEngine;
 
 public class Lever : MonoBehaviour
 {
-    public bool isUsable = true;  // Check if the lever can be used
-    private bool isActivated = false;  // Track if the lever has been activated
-    public int ID = 0;  // Lever's ID
-    public int KeyCode = 0;  // Keycode for the lever to match
-    public UnlockableElement unlockableElement = null;  // Reference to the associated unlockable element (e.g., door)
+    public bool isUsable = true;  // Can the lever be used?
+    private bool activated = false;
+    private int ID = 0;
+    public int KeyCode = 0;
+    public UnlockableElement linkedDoor;  // Reference to the door
+    private bool playerInRange = false; // Whether the player is near the lever
 
-    void Start()
-    {
-        // Initialize lever if needed (e.g., set up default rotation, etc.)
-    }
-
-    // This method is used to link the lever to an unlockable element (like a door)
     public void SetLever(UnlockableElement locker, int id, int keycode)
     {
-        unlockableElement = locker;  // Set the reference to the unlockable element (door)
-        ID = id;  // Set the ID for the lever
-        KeyCode = keycode;  // Set the keycode to unlock the element
+        linkedDoor = locker;
+        ID = id;
+        KeyCode = keycode;
     }
 
-    // This method is called when the player presses the "E" key to interact with the lever
-    public void Use()
+    void Update()
     {
-        if (isUsable && !isActivated)
+        // Check if the player is pressing "E" and if they are near the lever
+        if (playerInRange && isUsable && !activated && Input.GetKeyDown(UnityEngine.KeyCode.E))
         {
-            isUsable = false;  // The lever can only be used once until reset
-            isActivated = true;  // Mark the lever as activated
-
-            // Rotate the lever by -90 degrees on the Z-axis (flip the lever)
-            FlipLever();
-
-            // Unlock the associated unlockable element (e.g., door)
-            unlockableElement.Unlock(ID, KeyCode);
-
-            // Play activation sound or visual effects (optional)
-            PlayActivationSound();
+            Use();
         }
     }
 
-    // Method to flip the lever when activated (rotate it -90 degrees on the Z-axis)
-    private void FlipLever()
+    private void OnTriggerEnter(Collider other)
     {
-        // Rotate the lever by -90 degrees on the Z-axis
-        transform.Rotate(0, 0, -90);
-        Debug.Log("Lever flipped!");
+        // Check if the player enters the trigger zone of the lever
+        if (other.CompareTag("Player"))
+        {
+            playerInRange = true;
+            Debug.Log("Player is near the lever: " + this.name);
+        }
     }
 
-    // Play sound effect when the lever is activated (optional)
-    private void PlayActivationSound()
+    private void OnTriggerExit(Collider other)
     {
-        // Insert sound for lever activation (e.g., "click" or "clank" sound)
-        Debug.Log("Lever activation sound played!");
+        // When the player exits the trigger zone, stop interaction
+        if (other.CompareTag("Player"))
+        {
+            playerInRange = false;
+            Debug.Log("Player left the lever area.");
+        }
+    }
+
+    public void Use()
+    {
+        if (isUsable && !activated)
+        {
+            Debug.Log($"Lever {this.name} activated.");
+            isUsable = false;
+            activated = true;
+            linkedDoor?.Unlock(ID, KeyCode);  // Send unlock request to the linked door
+        }
+    }
+
+    // Optional: Reset the lever (if needed in the future)
+    public void ResetLever()
+    {
+        activated = false;
+        isUsable = true;
     }
 }

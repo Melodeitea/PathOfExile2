@@ -28,10 +28,6 @@ public class Player : MonoBehaviour
 	public bool isCrystalActive; // Whether a crystal is active
 	public CrystalManager crystalManager; // Reference to CrystalManager
 
-	// keys n levers
-	private List<int> collectedKeyIds = new List<int>();  // List of key IDs player has
-	private List<int> activatedLevers = new List<int>();  // List of lever codes activated by player
-
 	int PlayerCrystal = 0;
 	int PlayerGold = 0;
 	public TextMeshProUGUI goldText; // Reference to the TextMeshPro UI element for gold
@@ -95,6 +91,9 @@ public class Player : MonoBehaviour
 	float DelayBeforeStopLookingAtSpell = 1.5f;
 	float LastCastSpell = 0;
 	float SpeedRotation = 360; // ° per sec
+
+	// key
+	private List<int> playerKeys = new List<int>();  // List to store collected keys
 
 	// Input
 	bool Spell1_Hold = false;
@@ -250,6 +249,32 @@ public class Player : MonoBehaviour
 		}
 	}
 
+	//---------------------------// key //---------------------------//
+
+	public void CollectKey(int keyID)
+	{
+		if (!playerKeys.Contains(keyID))
+		{
+			playerKeys.Add(keyID);
+			Debug.Log($"Key {keyID} added to inventory.");
+		}
+	}
+
+	public bool HasKey(int keyID)
+	{
+		return playerKeys.Contains(keyID);
+	}
+
+	public void UseKey(int keyID)
+	{
+		if (playerKeys.Contains(keyID))
+		{
+			playerKeys.Remove(keyID);
+			Debug.Log($"Key {keyID} used.");
+		}
+	}
+
+
 	//---------------------------// life //---------------------------//
 	public void TakeHit(float dmg)
 	{
@@ -324,39 +349,6 @@ public class Player : MonoBehaviour
 			goldText.text = $"Gold: {PlayerGold}"; // Update the TextMeshPro UI
 		}
 	}
-
-	//---------------------------// keys n levers //---------------------------//
-
-	// Check if player has a specific key
-	public bool HasKey(int keyId)
-	{
-		return collectedKeyIds.Contains(keyId);
-	}
-
-	// Check if player has activated a specific lever
-	public bool HasLeverCode(int leverCode)
-	{
-		return activatedLevers.Contains(leverCode);
-	}
-
-	// Add a key to the player's inventory (for example when they collect it)
-	public void AddKey(int keyId)
-	{
-		if (!collectedKeyIds.Contains(keyId))
-		{
-			collectedKeyIds.Add(keyId);
-		}
-	}
-
-	// Activate a lever (for example when the player interacts with it)
-	public void ActivateLever(int leverCode)
-	{
-		if (!activatedLevers.Contains(leverCode))
-		{
-			activatedLevers.Add(leverCode);
-		}
-	}
-
 
 //---------------------------// crystals //---------------------------//
 
