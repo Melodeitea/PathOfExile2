@@ -153,8 +153,8 @@ MonoBehaviour:
   bAlive: 1
   ID: 0
   FeedBackMat: {fileID: 2100000, guid: 563ec421922cd45458dc341fe2d463c5, type: 2}
-  deathSound: {fileID: 0}
-  deathEffect: {fileID: 0}
+  deathSound: {fileID: 8300000, guid: 2636ba78db3142846a4b139878ee5db7, type: 3}
+  deathEffect: {fileID: 5515065002404772068, guid: b5c8ca7ed10b61e499cce8ec3b6e2e4c, type: 3}
 --- !u!54 &6218548399980557724
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -70,9 +70,15 @@ public class LightningJudgement : MonoBehaviour
         if (TimerMana >= ChargeTime)
         {
             TimerMana -= ChargeTime;
-            Activator.ManaComsuption(Manacost);
+
+            // Call the Player's ManaComsuption method to reduce mana while spell is active
+            if (Activator != null)
+            {
+                Activator.ManaConsumption(Manacost);
+            }
         }
     }
+
 
     public void ActivateSpell(Vector3 destinationpos, Player activator)
     {
@@ -156,6 +162,13 @@ public class LightningJudgement : MonoBehaviour
         {
             StreamLightnings[i].transform.localPosition = StreamBasePos[i];
         }
+
+        // Stop the charging sound when the spell is deactivated
+        if (ChargeSound != null && audioSource.isPlaying)
+        {
+            audioSource.Stop();
+        }
+
     }
 
     private List<Ennemy> ObjectInTriangle(Vector3 A, Vector3 B, Vector3 C)

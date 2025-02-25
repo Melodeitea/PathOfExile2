@@ -19,6 +19,19 @@ public class Player : MonoBehaviour
 	public Slider manaBar; // UI Slider for mana
 	public TextMeshProUGUI manaText; // UI Text for mana
 
+	public Slider crystalManaBar; // UI Slider for crystal mana
+	public TextMeshProUGUI crystalManaText; // UI Text for crystal mana
+
+	// Add variables for the crystal mana
+	public float CrystalManaMax = 100;
+	public float CrystalMana = 100;
+	public bool isCrystalActive; // Whether a crystal is active
+	public CrystalManager crystalManager; // Reference to CrystalManager
+
+	// keys n levers
+	private List<int> collectedKeyIds = new List<int>();  // List of key IDs player has
+	private List<int> activatedLevers = new List<int>();  // List of lever codes activated by player
+
 	int PlayerCrystal = 0;
 	int PlayerGold = 0;
 	public TextMeshProUGUI goldText; // Reference to the TextMeshPro UI element for gold
@@ -43,7 +56,7 @@ public class Player : MonoBehaviour
 	public float LifeMax = 200;
 	public float Life = 100;
 	[Tooltip("In Life per second (Life/s)")]// en valeur brut
-	public float LifeRegen = 2; 
+	public float LifeRegen = 2;
 
 	// Energyshield
 	public float EnergyShieldMax = 200;
@@ -61,11 +74,9 @@ public class Player : MonoBehaviour
 
 	// SpellsStat
 	List<SpellData> PlayerSpells = new List<SpellData>();
-	//public List<SpellData> Spells = new List<SpellData>();
 	float CastingSpeed = 0.25f;
 	private bool bCasting = false;
-	
-	
+
 	//Spells prefab
 	public GameObject ProjectileSpell;
 	public GameObject MeteorSpell;
@@ -88,7 +99,38 @@ public class Player : MonoBehaviour
 	// Input
 	bool Spell1_Hold = false;
 
+	void Start()
+	{
+		agent = GetComponent<NavMeshAgent>();
+		agent.speed = MvtSpeed;
+		crystalManager = FindObjectOfType<CrystalManager>();
 
+		UpdateHealthUI();
+		UpdateManaUI();
+		UpdateGoldUI();
+	}
+
+	// Update is called once per frame
+	void Update()
+	{
+		ManaRegenerated();
+		LifeRegenerated();
+		EnergyShieldManager();
+		ManageCrystalMana();
+		InputManager();
+		RotateToLookAt();
+		PickUpGold();
+	}
+
+	//---------------------------// Base codes //---------------------------//
+	private void InputManager()
+	{
+		if (Spell1_Hold && bCasting) // relocate pos of spell
+		{
+			Judgement.ChangeDestinationPos(TargetGround());
+			LastCastSpell = Time.time;
+		}
+	}
 	public Vector3 TargetGround()
 	{
 		Camera cam = Camera.main;
@@ -96,20 +138,32 @@ public class Player : MonoBehaviour
 		RaycastHit hit;
 		int layerMask = LayerMask.GetMask("ground");
 
-
 		if (Physics.Raycast(ray.origin, ray.direction, out hit, 50, layerMask))
 		{
-			//Debug.Log("Ground hit");
-			lastcursorpointgroundtarget = hit.point; 
+			lastcursorpointgroundtarget = hit.point;
 			return hit.point;
-
 		}
 		else
 		{
 			return Vector3.zero;
 		}
-
 	}
+
+	private void RotateToLookAt()
+	{
+		// If the vector is not zero, perform the look rotation
+		if (LookAtDest != Vector3.zero)
+		{
+			Vector3 direction = LookAtDest - this.transform.position;
+
+			if (direction.sqrMagnitude > 0.01f) // Check if the direction has a significant length (avoid tiny values)
+			{
+				Quaternion rotarget = Quaternion.LookRotation(direction);
+				this.transform.rotation = Quaternion.RotateTowards(this.transform.rotation, rotarget, SpeedRotation * Time.deltaTime);
+			}
+		}
+	}
+
 	public GameObject TargetEnnemy()
 	{
 		Camera cam = Camera.main;
@@ -117,42 +171,19 @@ public class Player : MonoBehaviour
 		RaycastHit hit;
 		int layerMask = LayerMask.GetMask("ennemy");
 
-
 		if (Physics.Raycast(ray.origin, ray.direction, out hit, 50, layerMask))
 		{
-			//Debug.Log("ennemy hit");
 			UnderCursorEnnemy = hit.rigidbody.gameObject;
 			return hit.rigidbody.gameObject;
-
 		}
 		else
 		{
 			return null;
 		}
-
 	}
 
-
-	void Start()
-	{
-		agent = GetComponent<NavMeshAgent>();
-		agent.speed = MvtSpeed;
-		// PlayerSpells = Datas.LoadSpellData(); // ne pas s'en occuper pour l'instant
-
-		UpdateHealthUI();
-		UpdateManaUI();
-
-		// Ensure the goldText field is assigned
-		if (goldText == null)
-		{
-			Debug.LogError("Gold TextMeshPro UI is not assigned in the Player script!");
-		}
-
-		UpdateGoldUI(); // Initialize the gold display
-	}
 	public void OnMoveTo(InputAction.CallbackContext ctx)
 	{
-		
 		if (ctx.performed)
 		{
 			agent.SetDestination(TargetGround());
@@ -163,6 +194,7 @@ public class Player : MonoBehaviour
 			}
 		}
 	}
+
 	public void OnSpell_1(InputAction.CallbackContext ctx)
 	{
 		if (ctx.performed)
@@ -185,32 +217,78 @@ public class Player : MonoBehaviour
 	}
 
 	private void CastSpell()
-    {
-        Mana -= SpellManaCost;
-        UpdateManaUI();
-
-        Vector3 targetPos = TargetGround();
-        Judgement.ActivateSpell(targetPos, this);
-        bCasting = true;
-        LookAtPos = targetPos;
-        bLookAtSpell = true;
-        LastCastSpell = Time.time;
-    }
-
-
-	// Update is called once per frame
-	void Update()
 	{
-		ManaRegenerated();
-		LifeRegenerated();
-		EnergyShieldManager();
-		InputManager();
-		//
-		RotateToLookAt();
-		PickUpGold();
-	   // InputManagerBalance();// ne pas s'en occuper pour l'instant
+		// First attempt to use crystal mana, and fall back to regular mana if not enough crystal mana
+		ManaConsumption(SpellManaCost); // This will use crystal mana first, then regular mana
 
+		// If you still have enough mana after consumption, proceed to cast the spell
+		if (Mana >= SpellManaCost)
+		{
+			UpdateManaUI(); // Update the UI after mana consumption
+			Vector3 targetPos = TargetGround();
+			Judgement.ActivateSpell(targetPos, this);
+			bCasting = true;
+			LookAtPos = targetPos;
+			bLookAtSpell = true;
+			LastCastSpell = Time.time;
+		}
+		else
+		{
+			Debug.Log("Not enough mana to cast the spell!");
+		}
 	}
+
+	private void EnergyShieldManager()
+	{
+		if (EnergyShield < EnergyShieldMax && EnergyShieldHitRecently + EnergyShieldDelay <= Time.time)
+		{
+			EnergyShield += EnergyShieldRegen * EnergyShieldMax * Time.deltaTime;
+			if (EnergyShield > EnergyShieldMax)
+			{
+				EnergyShield = EnergyShieldMax;
+			}
+		}
+	}
+
+	//---------------------------// life //---------------------------//
+	public void TakeHit(float dmg)
+	{
+		Life -= dmg;
+		Debug.Log("Player took damage!");
+		UpdateHealthUI();
+
+		if (Life <= 0)
+		{
+			Die();
+		}
+	}
+
+	public void UpdateHealthUI()
+	{
+		if (healthBar != null)
+		{
+			healthBar.value = Life / LifeMax;
+		}
+		if (healthText != null)
+		{
+			healthText.text = $"HP: {Mathf.CeilToInt(Life)} / {LifeMax}";
+		}
+	}
+	private void LifeRegenerated()
+	{
+		Life += Time.deltaTime * LifeRegen;
+		if (Life > LifeMax) Life = LifeMax;
+		UpdateHealthUI();
+	}
+
+	private void Die()
+	{
+		Debug.Log("Player died!");
+	}
+
+	//---------------------------// gold //---------------------------//
+
+
 	// test gold
 	private void PickUpGold()
 	{
@@ -247,31 +325,129 @@ public class Player : MonoBehaviour
 		}
 	}
 
-	public void TakeCrystal(int val)
+	//---------------------------// keys n levers //---------------------------//
+
+	// Check if player has a specific key
+	public bool HasKey(int keyId)
+	{
+		return collectedKeyIds.Contains(keyId);
+	}
+
+	// Check if player has activated a specific lever
+	public bool HasLeverCode(int leverCode)
+	{
+		return activatedLevers.Contains(leverCode);
+	}
+
+	// Add a key to the player's inventory (for example when they collect it)
+	public void AddKey(int keyId)
+	{
+		if (!collectedKeyIds.Contains(keyId))
+		{
+			collectedKeyIds.Add(keyId);
+		}
+	}
+
+	// Activate a lever (for example when the player interacts with it)
+	public void ActivateLever(int leverCode)
+	{
+		if (!activatedLevers.Contains(leverCode))
+		{
+			activatedLevers.Add(leverCode);
+		}
+	}
+
+
+//---------------------------// crystals //---------------------------//
+
+
+public void TakeCrystal(int val)
 	{
 		Debug.Log("More crystal");
 		PlayerCrystal += val;
 	}
-	private void RotateToLookAt()
+
+	public void ActivateCrystal(int crystalManaValue)
 	{
-		if(LastCastSpell + DelayBeforeStopLookingAtSpell <= Time.time)
+		isCrystalActive = true;
+		CrystalMana = crystalManaValue;
+		UpdateCrystalManaUI();
+	}
+
+	public void DeactivateCrystal()
+	{
+		isCrystalActive = false;
+		CrystalMana = 0;
+		UpdateCrystalManaUI();
+	}
+
+	// Mana Management
+	public void ManaConsumption(float amount)
+	{
+		if (crystalManager != null && crystalManager.HasCrystalMana(amount))
 		{
-			bLookAtSpell = false;
+			crystalManager.UseCrystalMana(amount);
 		}
-		if(bLookAtSpell)
+		else
 		{
-			
-			this.transform.LookAt(new Vector3(LookAtPos.x, this.transform.position.y, LookAtPos.z));
+			if (Mana >= amount)
+				Mana -= amount;
+			else
+				Debug.Log("Not enough mana!");
 		}
-		else // rotate to look at the target
+	}
+
+	public void UpdateCrystalManaUI()
+	{
+		if (crystalManaBar != null && crystalManaText != null)
 		{
-			//this.transform.LookAt(new Vector3(LookAtDest.x, this.transform.position.y, LookAtDest.z));
-			Vector3 TargetPos = new Vector3(LookAtDest.x, this.transform.position.y, LookAtDest.z);
-			Quaternion rotarget = Quaternion.LookRotation(TargetPos - this.transform.position);
-			this.transform.rotation = Quaternion.RotateTowards(this.transform.rotation, rotarget, SpeedRotation * Time.deltaTime);
+			crystalManaBar.value = CrystalMana / CrystalManaMax;  // Update the slider value
+			crystalManaText.text = $"Crystal Mana: {Mathf.CeilToInt(CrystalMana)} / {Mathf.CeilToInt(CrystalManaMax)}";  // Update the text
 		}
 
+		Canvas.ForceUpdateCanvases();  // Forces UI to update immediately (important for UI consistency)
 	}
+
+
+
+	private void ManageCrystalMana()
+	{
+		if (isCrystalActive && bCasting && CrystalMana > 0)
+		{
+			float drainAmount = Time.deltaTime * (ManaMax * ManaRegen / 100);
+			CrystalMana -= drainAmount;
+			if (CrystalMana < 0) CrystalMana = 0;
+
+			UpdateCrystalManaUI();
+		}
+
+		if (isCrystalActive && CrystalMana <= 0)
+		{
+			DeactivateCrystal();
+		}
+	}
+
+	public void RefillManaAndCrystal(float refillAmount)
+	{
+		// Refill regular mana
+		Mana += refillAmount;
+		if (Mana > ManaMax) Mana = ManaMax;
+
+		// Refill crystal mana if the crystal is active and below max
+		if (isCrystalActive)
+		{
+			CrystalMana = CrystalManaMax;  // Refill crystal to max value
+		}
+
+		// Update UI immediately after refilling
+		UpdateManaUI();         // Update the regular mana UI
+		UpdateCrystalManaUI();  // Update the crystal mana UI (this is crucial)
+
+		Debug.Log($"Refilled Crystal Mana: {CrystalMana}/{CrystalManaMax}");  // Debug message to confirm
+	}
+
+
+
 	private void ManaRegenerated()
 	{
 		Mana += Time.deltaTime * (ManaMax * ManaRegen / 100);
@@ -279,187 +455,19 @@ public class Player : MonoBehaviour
 		UpdateManaUI();
 	}
 
-	private void UpdateManaUI()
+	public void UpdateManaUI()
 	{
-		if (manaBar != null) manaBar.value = Mana / ManaMax;
-		if (manaText != null) manaText.text = $"Mana: {Mathf.CeilToInt(Mana)} / {ManaMax}";
-	}
-
-	private void LifeRegenerated()
-	{
-		Life += Time.deltaTime * LifeRegen;
-		if (Life > LifeMax)
+		if (manaBar != null)
 		{
-			Life = LifeMax;
+			manaBar.value = Mana / ManaMax;
 		}
-		UpdateHealthUI(); // NEW: Update UI when HP changes
-	}
-
-	public void TakeHit(float dmg)
-	{
-		Life -= dmg;
-		Debug.Log("Player took damage!");
-		UpdateHealthUI();
-
-		if (Life <= 0)
+		if (manaText != null)
 		{
-			Die();
+			manaText.text = $"Mana: {Mathf.CeilToInt(Mana)} / {ManaMax}";
 		}
 	}
 
-	private void UpdateHealthUI()
-	{
-		if (healthBar != null)
-		{
-			healthBar.value = Life / LifeMax; // Normalize health to range 0-1
-		}
-		if (healthText != null)
-		{
-			healthText.text = $"HP: {Mathf.CeilToInt(Life)} / {LifeMax}";
-		}
-	}
-
-	private void Die()
-	{
-		Debug.Log("Player died!");
-	}
-
-
-private void EnergyShieldManager()
-	{
-		if(EnergyShield < EnergyShieldMax && EnergyShieldHitRecently + EnergyShieldDelay <= Time.time)
-		{
-			EnergyShield += EnergyShieldRegen * EnergyShieldMax * Time.deltaTime;
-			if(EnergyShield > EnergyShieldMax)
-			{
-				EnergyShield = EnergyShieldMax;
-			}
-		}
-	}
-	private void InputManager()
-	{
-
-
-		if (Spell1_Hold && bCasting) // relocate pos of spell
-		{
-			Judgement.ChangeDestinationPos(TargetGround());
-			LastCastSpell = Time.time;
-		}
-	}
-	public void ManaComsuption( int manavalue)
-	{
-
-	}
-	public void CurrentSpellEnded()
-	{
-
-		bCasting = false;
-	}
-	private bool CastSpell(SpellData spell)
-	{
-		bool IsCast = false;
-
-		return IsCast;
-	}
-	private void InputManagerBalance()// ne pas s'en occuper pour l'instant
-	{
-		if (Input.GetMouseButtonDown(1))
-		{
-			agent.SetDestination(TargetGround());
-		}
-		if (bCasting == false)
-		{
-			if (Input.GetKeyDown(KeyCode.Q) && PlayerSpells[0].manacost <= Mana) // cast frost spike
-			{
-				bCasting = true;
-				Mana -= PlayerSpells[0].manacost;
-				StartCoroutine(CastSpellBalance(PlayerSpells[0]));
-
-			}
-			if (Input.GetKeyDown(KeyCode.W) && PlayerSpells[1].manacost <= Mana)
-			{
-				TargetGround();
-				bCasting = true;
-				Mana -= PlayerSpells[1].manacost;
-				StartCoroutine(CastSpellBalance(PlayerSpells[1]));
-			}
-			if (Input.GetKeyDown(KeyCode.E) && PlayerSpells[2].manacost <= Mana)
-			{
-				if (TargetEnnemy())//si il y a une cible éligible pour le sort
-				{
-					bCasting = true;
-					Mana -= PlayerSpells[2].manacost;
-					StartCoroutine(CastSpellBalance(PlayerSpells[2]));
-				}
-
-			}
-			if (Input.GetKeyDown(KeyCode.R) && PlayerSpells[2].manacost <= Mana)
-			{
-				TargetGround();
-				bCasting = true;
-				Mana -= PlayerSpells[2].manacost;
-				StartCoroutine(CastSpellBalance(PlayerSpells[2]));
-				
-
-			}
-		}
-	}
 	
-	IEnumerator CastSpellBalance(SpellData spelldata)// ne pas s'en occuper pour l'instant
-	{
-	   
-		yield return new WaitForSeconds(spelldata.casttime);
-		bCasting = false;
-		switch (spelldata.type)
-		{
-			case "projectile":
-				if (ProjectileSpell){
-					GameObject proj = Instantiate(ProjectileSpell);
-					proj.GetComponent<projectile>().Initialize(this.transform.forward, this.transform.forward + this.transform.position, spelldata);
-				}
-				else
-				{
-					Debug.Log("No proj prefab available");
-				}
-				break;
-			case "aoe":
-				if (MeteorSpell){
-					GameObject meteor = Instantiate(MeteorSpell);
-					meteor.GetComponent<meteor>().Initialize(lastcursorpointgroundtarget, this.transform.up *20, spelldata);
-				}
-				else{
-					Debug.Log("No AOE prefab available");
-				}
 
-				break;
-			case "rebond":
-				if (RebondSpell)
-				{
-					GameObject rebond = Instantiate(RebondSpell);
-					rebond.GetComponent<rebond>().Initialize(UnderCursorEnnemy, this.transform.forward + this.transform.position, spelldata);
-					UnderCursorEnnemy = null;
-				}
-				else
-				{
-					Debug.Log("No Rebond prefab available");
-				}
-				break;
-			case "orb": // miss data in excell
-				if (OrbSpell)
-				{
-					GameObject orb = Instantiate(RebondSpell);
-					orb.GetComponent<Orb>().Initialize(lastcursorpointgroundtarget, spelldata);
-					UnderCursorEnnemy = null;
-				}
-				else
-				{
-					Debug.Log("No Orb prefab available");
-				}
-				break;
-
-		}
- 
-	}
-
-
+	
 }

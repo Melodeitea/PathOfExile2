@@ -24,7 +24,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "New action",
+                    "name": "Interact",
                     "type": "Button",
                     "id": "ce6069b3-f496-4e5d-a248-b8e1e5f211d6",
                     "expectedControlType": "",
@@ -59,11 +59,11 @@
                 {
                     "name": "",
                     "id": "00c25a65-2bf9-4441-9e1f-9ae9d17d12ee",
-                    "path": "",
-                    "interactions": "",
+                    "path": "<Keyboard>/e",
+                    "interactions": "Press,Tap",
                     "processors": "",
                     "groups": "",
-                    "action": "New action",
+                    "action": "Interact",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

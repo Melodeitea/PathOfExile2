@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &5107565274129990447
+--- !u!1 &3489119566317913356
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,48 +8,48 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2790696749325232741}
-  - component: {fileID: 2902776974909503642}
-  - component: {fileID: 125776210618861468}
-  - component: {fileID: 9144254733177299285}
-  - component: {fileID: 3870959840230135163}
+  - component: {fileID: 4018457867826160206}
+  - component: {fileID: 3647330619187666533}
+  - component: {fileID: 4267099979722058088}
+  - component: {fileID: 970001978812592468}
+  - component: {fileID: 1691341967806186145}
   m_Layer: 0
-  m_Name: Trap
+  m_Name: lever
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2790696749325232741
+--- !u!4 &4018457867826160206
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5107565274129990447}
+  m_GameObject: {fileID: 3489119566317913356}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.628, z: -2.409}
-  m_LocalScale: {x: 3, y: 0.1, z: 3}
+  m_LocalPosition: {x: 0.6009879, y: 2.796, z: -6.654}
+  m_LocalScale: {x: 0.13379, y: 0.13379, z: 0.13379}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &2902776974909503642
+--- !u!33 &3647330619187666533
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5107565274129990447}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &125776210618861468
+  m_GameObject: {fileID: 3489119566317913356}
+  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &4267099979722058088
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5107565274129990447}
+  m_GameObject: {fileID: 3489119566317913356}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -88,13 +88,13 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &9144254733177299285
-BoxCollider:
+--- !u!136 &970001978812592468
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5107565274129990447}
+  m_GameObject: {fileID: 3489119566317913356}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -106,26 +106,23 @@ BoxCollider:
   m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 2, z: 1}
-  m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &3870959840230135163
+  serializedVersion: 2
+  m_Radius: 0.5000001
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
+--- !u!114 &1691341967806186145
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5107565274129990447}
+  m_GameObject: {fileID: 3489119566317913356}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9c8d967ab23bc44a9c7b066f33baf45, type: 3}
+  m_Script: {fileID: 11500000, guid: c41d9a221db1e964da39a06b3c1afde9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Damage: 30
-  LaunchTime: 1
-  trapWhirrSound: {fileID: 8300000, guid: 0409b0691352acf45a8a7bdd7675638a, type: 3}
-  trapBlinkEffect: {fileID: 0}
-  impactSound: {fileID: 8300000, guid: e467baaabdca0ec4293e340c760b15d7, type: 3}
-  damageEffect: {fileID: 4021103657954561960, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
-  dmgFlick: {fileID: 0}
-  damageTextUI: {fileID: 0}
+  isUsable: 1
+  KeyCode: 1
+  UnlockableElement: {fileID: 0}
