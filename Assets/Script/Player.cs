@@ -93,7 +93,9 @@ public class Player : MonoBehaviour
 	float SpeedRotation = 360; // ° per sec
 
 	// key
-	private List<int> playerKeys = new List<int>();  // List to store collected keys
+	public List<int> collectedKeys = new List<int>();
+	public TMP_Text hudText;
+	private int totalKeysInScene;
 
 	// Input
 	bool Spell1_Hold = false;
@@ -107,6 +109,8 @@ public class Player : MonoBehaviour
 		UpdateHealthUI();
 		UpdateManaUI();
 		UpdateGoldUI();
+		UpdateHUD();
+		CountKeysInScene();
 	}
 
 	// Update is called once per frame
@@ -251,32 +255,54 @@ public class Player : MonoBehaviour
 
 	//---------------------------// key //---------------------------//
 
+	private void CountKeysInScene()
+	{
+		Key[] keys = FindObjectsOfType<Key>();  // Find all keys in scene
+		totalKeysInScene = keys.Length;
+	}
+
 	public void CollectKey(int keyID)
 	{
-		if (!playerKeys.Contains(keyID))
+		if (!collectedKeys.Contains(keyID))
 		{
-			playerKeys.Add(keyID);
-			Debug.Log($"Key {keyID} added to inventory.");
+			collectedKeys.Add(keyID);
+			Debug.Log($"Key {keyID} collected! Total keys: {collectedKeys.Count}");
+			UpdateHUD();
 		}
 	}
 
 	public bool HasKey(int keyID)
 	{
-		return playerKeys.Contains(keyID);
+		return collectedKeys.Contains(keyID);
 	}
 
 	public void UseKey(int keyID)
 	{
-		if (playerKeys.Contains(keyID))
+		if (collectedKeys.Contains(keyID))
 		{
-			playerKeys.Remove(keyID);
-			Debug.Log($"Key {keyID} used.");
+			collectedKeys.Remove(keyID);
+			Debug.Log($"Key {keyID} used! Remaining keys: {collectedKeys.Count}");
+			UpdateHUD();
+		}
+	}
+
+	public int GetKeyCount()
+	{
+		return collectedKeys.Count;
+	}
+
+	private void UpdateHUD()
+	{
+		if (hudText != null)
+		{
+			hudText.text = $"{collectedKeys.Count}/{totalKeysInScene} Keys Collected";
 		}
 	}
 
 
-	//---------------------------// life //---------------------------//
-	public void TakeHit(float dmg)
+
+//---------------------------// life //---------------------------//
+public void TakeHit(float dmg)
 	{
 		Life -= dmg;
 		Debug.Log("Player took damage!");

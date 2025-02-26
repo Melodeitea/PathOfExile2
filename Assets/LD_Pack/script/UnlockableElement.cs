@@ -1,17 +1,25 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.AI;
+using Unity.AI.Navigation;
 
 public class UnlockableElement : MonoBehaviour
 {
     public int KeyCode = 0;
     private int LockNumber = 0;
     private int UnlockNumber = 0;
-    [SerializeField]
     public List<Lever> Levers = new List<Lever>();
     private bool isUnlocked = false;
 
+    public AudioClip unlockSound;
+    private AudioSource audioSource;
+    public GameObject glowEffect;
+
     void Start()
     {
+        audioSource = GetComponent<AudioSource>();
+
         if (Levers.Count <= 0)
         {
             Debug.LogWarning(this.name + " has no lever");
@@ -38,20 +46,43 @@ public class UnlockableElement : MonoBehaviour
         {
             Debug.Log("Door unlocked: " + this.name);
             isUnlocked = true;
-            // Add actual logic to open the door (animation, collider disable, etc.)
-            // Example: Disable the door's collider to allow the player to walk through
-            Collider doorCollider = GetComponent<Collider>();
-            if (doorCollider != null)
+
+            // Play unlock sound
+            if (unlockSound != null && audioSource != null)
             {
-                doorCollider.enabled = false;
+                audioSource.PlayOneShot(unlockSound);
             }
+
+            // Show glow effect
+            if (glowEffect != null)
+            {
+                glowEffect.SetActive(true);
+            }
+
+            // Open door (move up by 2 units)
+            StartCoroutine(OpenDoor());
         }
     }
 
-    public virtual void CloseLock()
+    private IEnumerator OpenDoor()
     {
-        Debug.Log("Door locked: " + this.name);
-        isUnlocked = false;
+        float time = 0;
+        Vector3 startPos = transform.position;
+        Vector3 endPos = transform.position + new Vector3(0, 2, 0);
+
+        while (time < 1f)
+        {
+            transform.position = Vector3.Lerp(startPos, endPos, time);
+            time += Time.deltaTime;
+            yield return null;
+        }
+
+        // Rebake NavMesh
+        Unity.AI.Navigation.NavMeshSurface navMeshSurface = FindObjectOfType<Unity.AI.Navigation.NavMeshSurface>();
+        if (navMeshSurface != null)
+        {
+            navMeshSurface.BuildNavMesh();
+        }
     }
 
     public virtual void Unlock(int id, int keycode)

@@ -1,60 +1,75 @@
 using UnityEngine;
+using UnityEngine.AI;
+using Unity.AI.Navigation;
+using TMPro;
 
 public class KeyDoor : MonoBehaviour
 {
-    public int requiredKeyID;  // The ID of the key required to open the door
-    private bool isUnlocked = false;  // Tracks whether the door is unlocked
+	public int requiredKeyID;
+	private bool isUnlocked = false;
+	public AudioClip unlockSound;
+	public AudioClip doorOpenSound;
+	public TextMeshProUGUI hudMessage;
+	public TextMeshProUGUI keyCounter;
+	private AudioSource audioSource;
 
-    private void OnTriggerEnter(Collider other)
-    {
-        Player player = other.GetComponent<Player>();
+	public NavMeshSurface navMeshSurface;
 
-        // If the player collides with the door and they have the required key, unlock the door
-        if (player != null)
-        {
-            if (player.HasKey(requiredKeyID))
-            {
-                UnlockDoor(player);
-            }
-            else
-            {
-                Debug.Log("You need the correct key to open this door!");
-            }
-        }
-    }
+	private void Start()
+	{
+		audioSource = GetComponent<AudioSource>();
+	}
 
-    private void UnlockDoor(Player player)
-    {
-        if (!isUnlocked)
-        {
-            isUnlocked = true;  // Set the door to unlocked
+	private void OnTriggerEnter(Collider other)
+	{
+		Player player = other.GetComponent<Player>();
 
-            // Optionally, use the key after unlocking (remove it from the player's inventory)
-            player.UseKey(requiredKeyID);
+		if (player != null && player.HasKey(requiredKeyID))
+		{
+			UnlockDoor(player);
+		}
+		else
+		{
+			if (hudMessage != null) hudMessage.GetComponent<TextMeshProUGUI>().text = ("You need the correct key to open this door!");
+		}
+	}
 
-            // Log the success and trigger door open animation or state change
-            Debug.Log("Door unlocked!");
-            OpenDoor();
-        }
-    }
+	private void UnlockDoor(Player player)
+	{
+		if (!isUnlocked)
+		{
+			isUnlocked = true;
+			player.UseKey(requiredKeyID);
+			if (unlockSound != null) audioSource.PlayOneShot(unlockSound);
+			if (hudMessage != null) hudMessage.GetComponent<TextMeshProUGUI>().text = "Porte déverrouillée";
+			if (keyCounter != null) keyCounter.GetComponent<TextMeshProUGUI>().text = $"{player.GetKeyCount()}/3 clés restantes";
+			OpenDoor();
+			if (navMeshSurface != null)
+			{
+				navMeshSurface.BuildNavMesh();  // Rebuild the NavMesh after unlocking
+			}
+		}
+	}
 
-    private void OpenDoor()
-    {
-        // This is where you would implement your door opening logic.
-        // You could animate the door, disable the collider, or activate the door’s open state.
+	private void OpenDoor()
+	{
+		
+		transform.Rotate(0, -90, 0);
 
-        // Example: Open the door (using a simple animation or state change)
-        Animator doorAnimator = GetComponent<Animator>();
-        if (doorAnimator != null)
-        {
-            doorAnimator.SetTrigger("Open"); // Trigger an animation called "Open"
-        }
+		// Play door opening sound
+		if (doorOpenSound != null) audioSource.PlayOneShot(doorOpenSound);
 
-        // Optionally, disable the collider to prevent the player from trying to open it again
-        Collider doorCollider = GetComponent<Collider>();
-        if (doorCollider != null)
-        {
-            doorCollider.enabled = false;  // Disable the collider so the player can't interact with it again
-        }
-    }
+		// Disable collider
+		Collider doorCollider = GetComponent<Collider>();
+		if (doorCollider != null)
+		{
+			doorCollider.enabled = false;
+		}
+
+		// Update NavMesh
+		if (navMeshSurface != null)
+		{
+			navMeshSurface.BuildNavMesh();
+		}
+	}
 }
